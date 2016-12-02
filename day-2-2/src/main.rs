@@ -1,3 +1,130 @@
+pub struct NumPad {
+    pub keys: [[char; 5]; 5],
+}
+
+impl NumPad {
+    fn new() -> NumPad {
+        NumPad {
+            keys: [
+                [' ', ' ', '1', ' ', ' '],
+                [' ', '2', '3', '4', ' '],
+                ['5', '6', '7', '8', '9'],
+                [' ', 'A', 'B', 'C', ' '],
+                [' ', ' ', 'D', ' ', ' '],
+            ]
+        }
+    }
+
+    fn get(&self, row: u32, col: u32) -> char {
+        self.keys[row as usize][col as usize]
+    }
+}
+
+pub struct Finger {
+    pub row: u32,
+    pub col: u32
+}
+
+impl Finger {
+    fn new() -> Finger {
+        Finger {
+            row: 1,
+            col: 1,
+        }
+    }
+
+    fn move_up(&mut self) {
+        match self.col {
+            1 | 3 => {
+                if self.row > 1 {
+                    self.row -= 1;
+                }
+            },
+            2 => {
+                if self.row > 0 {
+                    self.row -= 1;
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn move_down(&mut self) {
+        match self.col {
+            1 | 3 => {
+                if self.row < 3 {
+                    self.row += 1;
+                }
+            },
+            2 => {
+                if self.row < 4 {
+                    self.row += 1;
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn move_left(&mut self) {
+        match self.row {
+            1 | 3 => {
+                if self.col > 1 {
+                    self.col -= 1;
+                }
+            },
+            2 => {
+                if self.col > 0 {
+                    self.col -= 1;
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn move_right(&mut self) {
+        match self.row {
+            1 | 3 => {
+                if self.col < 3 {
+                    self.col += 1;
+                }
+            },
+            2 => {
+                if self.col < 4 {
+                    self.col += 1;
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
 fn main() {
-    println!("Hello, world!");
+    let input = "UULDRRRDDLRLURUUURUURDRUURRDRRURUDRURRDLLDRRRDLRUDULLRDURLULRUUURLDDRURUDRULRDDDUDRDLDDRDDRUURURRDDRLRLUDLUURURLULLLRRDRLDRLRDLULULRDRDDUURUDRRURDLRRDDDLUULDURDLDLLRLRLLUDUDLRDDLUURUUDDRDULDDLDLLDULULRLDDDUDDDRLLRURLRDUUUDUUDDURRDLDDLRDLLUDDLDRLDULDRURLUUDLURLUDRULRLRUUUURLUUUDDULLRLLURDRURLLRLRLDDRURURULRULLUUUULUDULDDDRDDLURLUURRLDDRDRUDDRRLURRDURRLDUULRRLLRDLLDDUURULLRUURRRRDRRURLULLRLRDDULULRDLDDLULLD
+UUDUDDRRURRUDDRLDLURURLRLLDRLULLUURLLURDRLLURLLRRLURDLDURUDRURURDLRDRRDULRLLLRDLULDRLLDLDRLDDRUUUUULRLDUURDUUUURUUDLRDLLDRLURULDURURLDLLRDLULLULLLLLUDUDDLRLLLUDLRUUDDUUDUDDDLULDDUDUULUUDUDRRULRRRURUDUUULDDRURLLULLULURLUDRDLUUUDLDRRLRRRULLRRURRUDDDRDLDDDLDUDLLDRRDURRURRURRLDLURUULRLDLUDUDUUULULUUDDDLDDULRDULLULDRDDURRURRRULRDURULUDURRDLLUURRUURLLLULDRRULUUUURLRLRDDDDULLUUUDRRLRRLRRLLLUDDDLRDDURURRDULLLUDLUDURRLRDURUURURDRDUUURURRUDRURRULLDDURRLRRRUULDRLDRRURUDLULRLLRRDLDDRLRRULDDLLUURUDDUDRLUD
+DDDUDDRRDRRRUULDRULDLDLURRRUURULRUDDRLLLLURRLRULDLURRULDRUDRRLLLLDULRDLUUURDDLDLURRLLUUURLLUDLUDRRDDULLULURDULRRDLRLDRRUUUUDLRRDLDDLDULDRUULRLLDLRURRUDLDDDRUUULLDDLULDULDUURUDDDLULUDLUURLRURUURDDUDRRLDRRRDDDDRDLUDRRDURDLDRURDDDRRLLLRDDRRRDDLDRLLUURRLDRDDRDLRDDLLDRLRDRDDDURLULLRUURDLULRURRUUDLDRLDRRDDRLDDUULLRDDRRLLLDDDUURDUDRUDUDULDULRUURLDURRDLUURRDLLDDLLURUUUDRLUURRDLUDUULRURLUDDLLRUDURRDRRRDRDLULRRLRUDULUUDRLURRRRLULURRDLLDRDDRLULURDURRDUUULLRDUUDLDUDURUDRUDDLRLULRLRLRRRLRUULLDDLUDDLDRRRLDDLLRLRLRUDULRLLLUULLDRDLDRRDULLRRLLDLDUDULUDDUUDLRDRLUUULLRLDLDDLLRUDDRDD
+DDUURRLULDLULULLDUDDRURDDRLRDULUURURRLURDLRRDUUDLULDRDLDLRLULLRULLDRLDRRULUDRLDURUURLLDLLDDLUULLRLRULRLUURDDDDDRLDRLLLDLULDLDLULRRURLLLLLLRLUDLRRLRULUULLLLURDLLRLLDDUDLLULDLLURUUDLRDRDUDDDRDDUULRLLDDDLLRLURLUDLULRRUUUULLDLDLLLDRLUDRDRDLUDLRUDRDRUDRDLLDDLRRLRDLDURDLDRUUUDRLULUULDURDLUUUDDDDDLDRDURDLULDDLLUDUURRUDDLURUDDLRLUUDURUDUULULUDLDLUURDULURURULDDDLUUUUDLUUDUDLLLRDDLRDDLRURRRLLLULLURULLRDLLDRULRDDULULRLUDRRRDULRLLUDUULLRDRDDDULULRURULDLDLDRDLDUDRDULLUUUUUDLRDURDUUULLLRUULLRUULDRRUUDLLLULLUURLDDLUULLRLRLRDRLLLRLURDDURUDUULULDLRLRLLUDURRURDRUDLRDLLRDDRDUULRDRLLRULLUDDRLDLDDDDUDRDD
+URDLUDUDLULURUDRLUDLUDLRLRLLDDDDDLURURUURLRDUDLRRUUDUURDURUULDRRRDDDLDUURRRDLRULRRDLRUDUDLDDDLLLRLRLRUUUUUULURRRLRLUDULURLDLLDUUDDRUDLDUDRRLULLULLDURDDRRLLRLDLLLLRLULLDDDDLDULLRDUURDUDURRUULLDRULUDLUULUUDDLDDRDLULLULDLDRLDLRULLRLURDURUDRLDURDRULRLLLLURRURLRURUDUDRRUDUUDURDDRRDRLURLURRLDRRLLRLRUDLRLLRLDLDDRDLURLLDURUDDUUDRRLRUDLUDULDRUDDRDRDRURDLRLLRULDDURLUUUUDLUDRRURDDUUURRLRRDDLULLLDLRULRRRLDRRURRURRUUDDDLDRRURLRRRRDLDLDUDURRDDLLLUULDDLRLURLRRURDRUULDDDUDRDRUDRRLRLLLLLURDULDUDRLULDRLUULUDDDDUDDRDDLDDRLLRULRRURDDDRDDLDLULRDDRRURRUDRDDDDRURDRRURUUDUDDUURULLDRDULURUDUD";
+    let input = input.lines();
+
+    let mut key_presses = Vec::new();
+
+    let num_pad = NumPad::new();
+    let mut finger = Finger::new();
+
+    for line in input {
+        for char in line.chars() {
+            match char {
+                'U' => finger.move_up(),
+                'D' => finger.move_down(),
+                'L' => finger.move_left(),
+                'R' => finger.move_right(),
+                _ => {}
+            }
+        }
+        key_presses.push(num_pad.get(finger.row, finger.col));
+    }
+
+    let code: String = key_presses.into_iter().collect();
+
+    println!("Bathroom code: {}", code);
 }
