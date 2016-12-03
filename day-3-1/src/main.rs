@@ -16,12 +16,13 @@ fn main() {
             .map(|x| x.parse().expect("couldn't parse u32 from &str"))
             .collect();
 
-        let a = numbers.get(0).unwrap().clone();
-        let b = numbers.get(1).unwrap().clone();
-        let c = numbers.get(2).unwrap().clone();
-
-        if is_valid_triangle(a, b, c) {
-            num_real_triangles += 1;
+        match numbers.len() {
+            3 => {
+                if is_valid_triangle(numbers[0], numbers[1], numbers[2]) {
+                    num_real_triangles += 1;
+                }
+            },
+            _ => unreachable!()
         }
     }
 
