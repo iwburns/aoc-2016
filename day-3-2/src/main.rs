@@ -47,36 +47,11 @@ fn main() {
                 .expect("couldn't get() from row_3_nums")
                 .clone());
 
-            let smallest = triangle.iter()
-                .min()
-                .expect("couldn't find min value in triangle")
-                .clone();
+            let a = triangle.get(0).unwrap().clone();
+            let b = triangle.get(1).unwrap().clone();
+            let c = triangle.get(2).unwrap().clone();
 
-            let largest = triangle.iter()
-                .max()
-                .expect("couldn't find max value in triangle")
-                .clone();
-
-            let smallest_index = triangle.iter()
-                .position(|&x| {
-                    x == smallest
-                }).expect("couldn't find index of smallest in triangle");
-
-            let largest_index = triangle.iter()
-                .position(|&x| {
-                    x == largest
-                }).expect("couldn't find index of largest in triangle");
-
-            if smallest_index > largest_index {
-                triangle.remove(smallest_index);
-                triangle.remove(largest_index);
-            } else {
-                triangle.remove(largest_index);
-                triangle.remove(smallest_index);
-            }
-
-            let middle = triangle.remove(0);
-            if smallest + middle > largest {
+            if is_valid_triangle(a, b, c) {
                 num_real_triangles += 1;
             }
         }
@@ -84,6 +59,10 @@ fn main() {
         i += 3;
     }
     println!("Real Triangles: {}", num_real_triangles);
+}
+
+fn is_valid_triangle(a: u32, b: u32, c: u32) -> bool {
+    (a + b > c) && (b + c > a) && (c + a > b)
 }
 
 fn get_input_string() -> Result<String, std::io::Error> {
