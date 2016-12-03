@@ -47,13 +47,12 @@ fn main() {
                 .expect("couldn't get() from row_3_nums")
                 .clone());
 
-            match triangle.len() {
-                3 => {
-                    if is_valid_triangle(triangle[0], triangle[1], triangle[2]) {
-                        num_real_triangles += 1;
-                    }
-                },
-                _ => unreachable!()
+            if triangle.len() == 3 {
+                if is_valid_triangle(triangle[0], triangle[1], triangle[2]) {
+                    num_real_triangles += 1;
+                }
+            } else {
+                unreachable!();
             }
         }
 
