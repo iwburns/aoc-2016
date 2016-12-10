@@ -77,10 +77,10 @@ fn get_sub_string(string: &str, start: usize, end: usize) -> &str {
 }
 
 fn get_input_string() -> Result<String, std::io::Error> {
-    let mut input_file = File::open("../input/day-9.txt")?;
+    let mut input_file = try!(File::open("../input/day-9.txt"));
     let mut input_string = String::new();
 
-    input_file.read_to_string(&mut input_string)?;
+    try!(input_file.read_to_string(&mut input_string));
 
     Ok(input_string)
 }
