@@ -1,5 +1,6 @@
 use std::io::prelude::*;
 use std::fs::File;
+use std::time::Instant;
 
 #[derive(Debug)]
 struct Marker {
@@ -10,51 +11,22 @@ struct Marker {
 fn main() {
     let input = get_input_string().unwrap_or(String::new());
 
-    let sum = calc_num_characters(input);
+    let before = Instant::now();
+    let sum = calc_num_characters(&input);
+    let duration = before.elapsed();
+
+    println!("{:?}", duration);
 
     println!("{}", sum);
-
-//    let mut current_string = input;
-//    let mut sum: u64 = 0;
-//    loop {
-//
-//
-//
-//        if let (Some(start), Some(end)) = find_next_marker(current_string.as_str()) {
-//
-//            let marker = parse_marker(current_string.as_str(), start, end);
-//            let territory_end = end + 1 + marker.length as usize;
-//
-//            let full_marker_string = get_sub_string(current_string.as_str(), start, territory_end).to_string();
-//
-//            println!("full_marker_string: {}", full_marker_string);
-//
-//            sum += calc_num_characters(full_marker_string);
-//            println!("sum: {}", sum);
-//
-//            if territory_end == current_string.len() {
-//                break;
-//            }
-//
-//            let copy = current_string.clone();
-//            let (_, next) = copy.split_at(territory_end);
-//
-//            current_string = next.to_string();
-//        } else {
-//            break;
-//        }
-//    }
-//
-//    println!("count: {}", sum);
 }
 
-fn calc_num_characters(string: String) -> u64 {
+fn calc_num_characters(string: &str) -> u64 {
 
     if string.contains('(') {
         if !string.starts_with('(') {
 
             let (pre, post) = string.split_at(string.find('(').unwrap());
-            return pre.len() as u64 + calc_num_characters(post.to_string());
+            return (pre.len() as u64) + calc_num_characters(post);
 
         } else {
 
@@ -62,16 +34,16 @@ fn calc_num_characters(string: String) -> u64 {
             let start: usize = 0;
             let end: usize = string.find(')').unwrap();
 
-            let marker = parse_marker(string.as_str(), start, end);
-            let marker_territory = get_marker_territory(string.as_str(), &marker, end);
+            let marker = parse_marker(string, start, end);
+            let marker_territory = get_marker_territory(string, &marker, end);
 
-            println!("territory: {}", marker_territory);
+//            println!("territory: {}", marker_territory);
 
             let mut territory_char_count = 0;
 
             if marker_territory.contains('(') {
                 //territory contains another marker
-                territory_char_count = marker.repetitions * calc_num_characters(marker_territory.clone());
+                territory_char_count = marker.repetitions * calc_num_characters(marker_territory);
             } else {
                 territory_char_count = marker.repetitions * marker.length;
             }
@@ -80,7 +52,7 @@ fn calc_num_characters(string: String) -> u64 {
                 //there's more shit after this one.
 
                 let (pre, post) = string.split_at(end + 1 + marker_territory.len());
-                return territory_char_count + calc_num_characters(post.to_string());
+                return territory_char_count + calc_num_characters(post);
 
             } else {
                 //we're on the last one
@@ -91,8 +63,8 @@ fn calc_num_characters(string: String) -> u64 {
     string.len() as u64
 }
 
-fn get_marker_territory(string: &str, marker: &Marker, marker_end: usize) -> String {
-    get_sub_string(string.clone(), marker_end + 1, marker_end + 1 + marker.length as usize).to_string()
+fn get_marker_territory<'a>(string: &'a str, marker: &Marker, marker_end: usize) -> &'a str {
+    get_sub_string(string.clone(), marker_end + 1, marker_end + 1 + marker.length as usize)
 }
 
 fn find_next_marker(string: &str) -> (Option<usize>, Option<usize>) {
