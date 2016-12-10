@@ -10,64 +10,89 @@ struct Marker {
 fn main() {
     let input = get_input_string().unwrap_or(String::new());
 
-//    let input = "(10x2)(3x3)abcde".to_string();
-//    let target_count = "abcabcabcdeabcabcabcde".len();
+    let sum = calc_num_characters(input);
 
-//    let count = calc_num_characters(input.clone());
+    println!("{}", sum);
 
-//    println!("target_count: {}", target_count);
-//    println!("count: {}", count);
-
-    let mut current_string = input;
-    let mut sum: u64 = 0;
-    loop {
-        if let (Some(start), Some(end)) = find_next_marker(current_string.as_str()) {
-
-            let marker = parse_marker(current_string.as_str(), start, end);
-            let territory_end = end + 1 + marker.length as usize;
-
-            let full_marker_string = get_sub_string(current_string.as_str(), start, territory_end).to_string();
-
-            sum += calc_num_characters(full_marker_string);
-            println!("sum: {}", sum);
-            if territory_end == current_string.len() {
-                break;
-            }
-
-            let copy = current_string.clone();
-            let (_, next) = copy.split_at(territory_end);
-
-            current_string = next.to_string();
-        } else {
-            break;
-        }
-    }
-
-    println!("count: {}", sum);
+//    let mut current_string = input;
+//    let mut sum: u64 = 0;
+//    loop {
+//
+//
+//
+//        if let (Some(start), Some(end)) = find_next_marker(current_string.as_str()) {
+//
+//            let marker = parse_marker(current_string.as_str(), start, end);
+//            let territory_end = end + 1 + marker.length as usize;
+//
+//            let full_marker_string = get_sub_string(current_string.as_str(), start, territory_end).to_string();
+//
+//            println!("full_marker_string: {}", full_marker_string);
+//
+//            sum += calc_num_characters(full_marker_string);
+//            println!("sum: {}", sum);
+//
+//            if territory_end == current_string.len() {
+//                break;
+//            }
+//
+//            let copy = current_string.clone();
+//            let (_, next) = copy.split_at(territory_end);
+//
+//            current_string = next.to_string();
+//        } else {
+//            break;
+//        }
+//    }
+//
+//    println!("count: {}", sum);
 }
 
 fn calc_num_characters(string: String) -> u64 {
-    if let (Some(start), Some(end)) = find_next_marker(string.as_str()) {
-        let marker = parse_marker(string.as_str(), start, end);
-//        print!("{:?}", marker);
-        let marker_territory = get_sub_string(string.as_str(), 1 + end as usize, string.len());
 
-//        println!("territory: {}", marker_territory);
+    if string.contains('(') {
+        if !string.starts_with('(') {
 
-        if marker_territory.contains('(') {
-//            println!("found more");
-            let num_characters: u64 = calc_num_characters(marker_territory.to_string());
-            let marker_repetitions: u64 = marker.repetitions;
-//            println!("characters: {}", num_characters);
-//            println!("reps: {}", marker_repetitions);
-            return calc_num_characters(marker_territory.to_string()) * marker.repetitions;
+            let (pre, post) = string.split_at(string.find('(').unwrap());
+            return pre.len() as u64 + calc_num_characters(post.to_string());
+
         } else {
-//            println!("no more");
-            let num_leftover_chars = (marker_territory.len() as u64 - marker.length) as u64;
-            return (marker.length * marker.repetitions) + num_leftover_chars;
+
+            //we know start = index 0
+            let start: usize = 0;
+            let end: usize = string.find(')').unwrap();
+
+            let marker = parse_marker(string.as_str(), start, end);
+            let marker_territory = get_marker_territory(string.as_str(), &marker, end);
+
+            println!("territory: {}", marker_territory);
+
+            let mut territory_char_count = 0;
+
+            if marker_territory.contains('(') {
+                //territory contains another marker
+                territory_char_count = marker.repetitions * calc_num_characters(marker_territory.clone());
+            } else {
+                territory_char_count = marker.repetitions * marker.length;
+            }
+
+            if end + marker_territory.len() != string.len() - 1 {
+                //there's more shit after this one.
+
+                let (pre, post) = string.split_at(end + 1 + marker_territory.len());
+                return territory_char_count + calc_num_characters(post.to_string());
+
+            } else {
+                //we're on the last one
+                return territory_char_count;
+            }
         }
     }
-    return 0u64;
+    string.len() as u64
+}
+
+fn get_marker_territory(string: &str, marker: &Marker, marker_end: usize) -> String {
+    get_sub_string(string.clone(), marker_end + 1, marker_end + 1 + marker.length as usize).to_string()
 }
 
 fn find_next_marker(string: &str) -> (Option<usize>, Option<usize>) {
@@ -102,4 +127,81 @@ fn get_input_string() -> Result<String, std::io::Error> {
     try!(input_file.read_to_string(&mut input_string));
 
     Ok(input_string)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Marker;
+    use super::get_sub_string;
+    use super::find_next_marker;
+    use super::parse_marker;
+    use super::calc_num_characters;
+    use super::get_marker_territory;
+
+    #[test]
+    fn test_get_sub_string() {
+        let string = "abcdefghij";
+
+        let sub_str = get_sub_string(string, 0, 5);
+
+        assert_eq!("abcde", sub_str);
+    }
+
+    #[test]
+    fn test_find_next_marker() {
+        let string = "abcdefgh(2x10)ij";
+
+        let (start, end) = find_next_marker(string);
+
+        assert_eq!(start, Some(8));
+        assert_eq!(end, Some(13));
+    }
+
+    #[test]
+    fn test_parse_marker() {
+        let string = "abcdefgh(2x10)ij";
+
+        let marker = parse_marker(string, 8, 13);
+
+        assert_eq!(marker.length, 2);
+        assert_eq!(marker.repetitions, 10);
+    }
+
+    #[test]
+    fn test_get_marker_territory() {
+        let string = "abcdefgh(2x10)ij";
+
+        let marker = parse_marker(string, 8, 13);
+        let territory = get_marker_territory(string, &marker, 13);
+
+        assert_eq!(territory, "ij");
+
+        let string = "(2x10)ij";
+
+        let marker = parse_marker(string, 0, 5);
+        let territory = get_marker_territory(string, &marker, 5);
+
+        assert_eq!(territory, "ij");
+        assert_eq!(5 + territory.len(), string.len() - 1);
+    }
+
+    #[test]
+    fn test_calc_num_characters() {
+        let string = "ab".to_string();
+        let sum = calc_num_characters(string);
+        assert_eq!(sum, 2);
+
+        let string = "ab(1x2)a".to_string();
+        let sum = calc_num_characters(string);
+        assert_eq!(sum, 4);
+
+        let string = "ab(1x2)a(2x3)ab".to_string();
+        let sum = calc_num_characters(string);
+        assert_eq!(sum, 10);
+
+        let string = "(9x2)(1x2)abcde".to_string();
+        let sum = calc_num_characters(string);
+        assert_eq!(sum, 11);
+    }
+
 }
