@@ -40,7 +40,7 @@ impl Bot {
         let high: Option<Microchip> = self.high_chip.take();
 
         match (low, high) {
-            (Some(low), Some(high)) => {
+            (Some(_), Some(_)) => {
                 panic!("adding microchip to robot that already has two microchips");
             },
             (None, Some(high)) => {
@@ -68,11 +68,12 @@ impl Bot {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct ValueInstruction {
     pub chip: Microchip,
     pub target_bot: u32,
 }
+#[derive(Copy, Clone)]
 enum TargetType {
     Bot,
     Output,
@@ -104,13 +105,17 @@ impl Output {
     fn add_microchip(&mut self, chip: Microchip) {
         self.microchips.push(chip);
     }
+
+    fn get_microchips(&self) -> &Vec<Microchip> {
+        &self.microchips
+    }
 }
 
 
 fn main() {
     let input = get_input_string().unwrap_or(String::new());
 
-    let (val_instructions, bot_instructions) = get_instruction_sets(input.as_str());
+    let (val_instructions, mut bot_instructions) = get_instruction_sets(input.as_str());
 
     let mut bots: Vec<Option<Bot>> = Vec::new();
     let mut outputs: Vec<Option<Output>> = Vec::new();
@@ -126,76 +131,85 @@ fn main() {
         let mut bot: &mut Bot = bots[bot_index].as_mut().expect("couldn't get bot that we just inserted");
 
         bot.add_microchip(instr.chip);
-        println!("{:?}", bot);
     }
 
-    //todo: need to double up the loop here and make sure that bots don't act until they have two chips.
-    // in addition we need to make sure that we don't throw away instructions just because we can't
-    // execute one just yet
-    
-    let leftover_instruction: Vec<BotInstruction> = Vec::new();
-    for instr in bot_instructions {
-        let bot_id = instr.bot_id as usize;
-        let low = instr.low_target;
-        let low_type = instr.low_target_type;
-        let high = instr.high_target;
-        let high_type = instr.high_target_type;
+    while bot_instructions.len() > 0 {
 
-        let low_chip;
-        let high_chip;
+        let mut leftover_instructions: Vec<BotInstruction> = Vec::new();
 
-        if bots.get(bot_id).is_none() || bots.get(bot_id).unwrap().is_none() {
-            continue;
-        }
+        for instr in bot_instructions {
 
-        {
-            let mut bot: &mut Bot = bots[bot_id].as_mut().expect("couldn't unwrap a bot in bot_instructions phase");
+            let bot_id = instr.bot_id as usize;
+            let low_target = instr.low_target as usize;
+            let low_type = instr.low_target_type;
+            let high_target = instr.high_target as usize;
+            let high_type = instr.high_target_type;
 
-            low_chip = bot.low_chip.take();
-            high_chip = bot.high_chip.take();
+            if bots.get(bot_id).is_none() || bots.get(bot_id).unwrap().is_none() {
+                add_new_bot(&mut bots, bot_id as u32);
+            }
 
-            if let Some(low_chip) = low_chip.clone() {
-                if let Some(high_chip) = high_chip.clone() {
+            // default values, should never be used.
+            let mut low_chip: Microchip = Microchip::new(1_000_000);
+            let mut high_chip: Microchip = Microchip::new(1_000_000);
+
+            let mut process_instruction = false;
+            {
+                let mut current_bot: &mut Bot = bots.get_mut(bot_id).unwrap().as_mut().expect("couldn't unwrap a bot that we just inserted");
+                if current_bot.low_chip.is_some() && current_bot.high_chip.is_some() {
+
+                    process_instruction = true;
+                    low_chip = current_bot.low_chip.take().unwrap();
+                    high_chip = current_bot.high_chip.take().unwrap();
+
                     if low_chip.id() == 17 && high_chip.id() == 61 {
-                        println!("found it at bot_id: {}", bot.id());
+                        println!("found it at bot_id: {}", current_bot.id());
                     }
                 }
             }
+
+            if process_instruction {
+                match low_type {
+                    TargetType::Output => {
+                        if outputs.get(low_target).is_none() || outputs.get(low_target).unwrap().is_none() {
+                            add_new_output(&mut outputs, low_target as u32);
+                        }
+                        outputs[low_target].as_mut().unwrap().add_microchip(low_chip);
+                    },
+                    TargetType::Bot => {
+                        if bots.get(low_target).is_none() || bots.get(low_target).unwrap().is_none() {
+                            add_new_bot(&mut bots, low_target as u32);
+                        }
+                        bots[low_target].as_mut().unwrap().add_microchip(low_chip);
+                    },
+                };
+                match high_type {
+                    TargetType::Output => {
+                        if outputs.get(high_target).is_none() || outputs.get(high_target).unwrap().is_none() {
+                            add_new_output(&mut outputs, high_target as u32);
+                        }
+                        outputs[high_target].as_mut().unwrap().add_microchip(high_chip);
+                    },
+                    TargetType::Bot => {
+                        if bots.get(high_target).is_none() || bots.get(high_target).unwrap().is_none() {
+                            add_new_bot(&mut bots, high_target as u32);
+                        }
+                        bots[high_target].as_mut().unwrap().add_microchip(high_chip);
+                    },
+                };
+            } else {
+                leftover_instructions.push(instr);
+            }
         }
 
-        if let Some(low_chip) = low_chip {
-            match low_type {
-                TargetType::Output => {
-                    if outputs.get(low as usize).is_none() || outputs.get(low as usize).unwrap().is_none() {
-                        add_new_output(&mut outputs, low);
-                    }
-                    outputs[low as usize].as_mut().unwrap().add_microchip(low_chip);
-                },
-                TargetType::Bot => {
-                    if bots.get(low as usize).is_none() || bots.get(low as usize).unwrap().is_none() {
-                        add_new_bot(&mut bots, low);
-                    }
-                    bots[low as usize].as_mut().unwrap().add_microchip(low_chip);
-                },
-            }
-        }
-        if let Some(high_chip) = high_chip {
-            match high_type {
-                TargetType::Output => {
-                    if outputs.get(high as usize).is_none() || outputs.get(high as usize).unwrap().is_none() {
-                        add_new_output(&mut outputs, high);
-                    }
-                    outputs[high as usize].as_mut().unwrap().add_microchip(high_chip);
-                },
-                TargetType::Bot => {
-                    if bots.get(high as usize).is_none() || bots.get(high as usize).unwrap().is_none() {
-                        add_new_bot(&mut bots, high);
-                    }
-                    bots[high as usize].as_mut().unwrap().add_microchip(high_chip);
-                },
-            }
-        }
+        bot_instructions = leftover_instructions;
     }
+
+    let val_0 = outputs.get(0).unwrap().as_ref().unwrap().get_microchips().get(0).unwrap().id();
+    let val_1 = outputs.get(1).unwrap().as_ref().unwrap().get_microchips().get(0).unwrap().id();
+    let val_2 = outputs.get(2).unwrap().as_ref().unwrap().get_microchips().get(0).unwrap().id();
+
+    println!("multiplied: {}", val_0 * val_1 * val_2);
 }
 
 fn add_new_output(outputs: &mut Vec<Option<Output>>, new_id: u32) {
