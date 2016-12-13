@@ -1,7 +1,7 @@
 extern crate id_tree;
 use id_tree::{Tree, Node, NodeId};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 enum Element {
     Thulium,
     Plutonium,
@@ -9,18 +9,18 @@ enum Element {
     Promethium,
     Ruthenium,
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 enum ItemType {
     Microchip,
     Generator,
 }
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 struct Item {
     pub item_type: ItemType,
     pub element: Element,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 struct Floor {
     pub items: Vec<Item>,
 }
@@ -33,10 +33,36 @@ impl Floor {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 struct State {
     pub floors: Vec<Floor>,
     pub elevator_pos: u32,
+}
+
+impl State {
+    fn apply_move(&self, m: &Move) -> State {
+        let mut floors = self.floors.clone();
+
+        floors.get_mut(self.elevator_pos as usize).unwrap().items.retain(|x| {
+            if *x == m.first_item {
+                return false;
+            }
+            if let Some(second) = m.second_item.clone() {
+                return *x != second;
+            }
+            true
+        });
+
+        floors.get_mut(m.next_floor as usize).unwrap().items.push(m.first_item.clone());
+        if let Some(second) = m.second_item.clone() {
+            floors.get_mut(m.next_floor as usize).unwrap().items.push(second);
+        }
+
+        State {
+            floors: floors,
+            elevator_pos: m.next_floor,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -55,7 +81,17 @@ fn main() {
     let root_id = paths.set_root(Node::new(starting_state.clone()));
 
     for move_opt in get_possible_moves(&starting_state).iter() {
-        println!("{:?}", move_opt);
+
+        let state = starting_state.apply_move(move_opt);
+
+//        println!("{:?}", move_opt);
+//        println!("{:?}", state);
+        for move_opt_2 in get_possible_moves(&state) {
+
+            println!("{:?}", move_opt_2);
+        }
+        println!("=================");
+
     }
 
     //try all possible moves and add them as children,
