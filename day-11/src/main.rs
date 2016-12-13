@@ -1,7 +1,7 @@
 extern crate id_tree;
 use id_tree::{Tree, Node, NodeId};
 
-
+#[derive(Debug, Clone)]
 enum Element {
     Thulium,
     Plutonium,
@@ -9,11 +9,12 @@ enum Element {
     Promethium,
     Ruthenium,
 }
+#[derive(Debug, Clone)]
 enum ItemType {
     Microchip,
     Generator,
 }
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 struct Item {
     pub item_type: ItemType,
     pub element: Element,
@@ -35,18 +36,27 @@ impl Floor {
 #[derive(Clone)]
 struct State {
     pub floors: Vec<Floor>,
-    pub elevator: u32,
+    pub elevator_pos: u32,
 }
 
-
+#[derive(Debug)]
+struct Move {
+    pub next_floor: u32,
+    pub first_item: Item,
+    pub second_item: Option<Item>,
+}
 
 fn main() {
     let mut floors: Vec<Floor> = setup_floors();
     let mut paths = Tree::<State>::new();
 
-    let starting_state = State{ floors: floors.clone(), elevator: 0 };
+    let starting_state = State{ floors: floors.clone(), elevator_pos: 0 };
 
-    let root_id = paths.set_root(starting_state.clone());
+    let root_id = paths.set_root(Node::new(starting_state.clone()));
+
+    for move_opt in get_possible_moves(&starting_state).iter() {
+        println!("{:?}", move_opt);
+    }
 
     //try all possible moves and add them as children,
     //when checking children, don't progress after states where any chip is fried
@@ -60,6 +70,51 @@ fn main() {
         M must not be on a level with a different G, unless it has it's corresponding G
         get all parts up to level 4
     */
+}
+
+fn get_possible_moves(state: &State) -> Vec<Move> {
+    let mut next_floor_options = Vec::new();
+    if state.elevator_pos == 0 {
+        // can only move up.
+        next_floor_options.push(state.elevator_pos + 1);
+    } else if state.elevator_pos == 3 {
+        // can only move down.
+        next_floor_options.push(state.elevator_pos - 1);
+    } else {
+        // can move up or down.
+        next_floor_options.push(state.elevator_pos + 1);
+        next_floor_options.push(state.elevator_pos - 1);
+    }
+    let next_floor_options = next_floor_options;
+
+    let mut item_options: Vec<(Item, Option<Item>)> = Vec::new();
+    let current_floor: &Floor = state.floors.get(state.elevator_pos as usize).unwrap();
+
+    for item in current_floor.items.iter().cloned() {
+        item_options.push((item.clone(), None));
+    }
+
+    for (i, item) in current_floor.items.iter().enumerate() {
+        for other_item in current_floor.items.iter().skip(i + 1) {
+            item_options.push( (item.clone(), Some(other_item.clone())) );
+        }
+    }
+    let item_options = item_options;
+
+    let mut move_options = Vec::new();
+
+    for floor_option in next_floor_options {
+        for item_option in item_options.iter().cloned() {
+            let move_option = Move {
+                next_floor: floor_option,
+                first_item: item_option.0,
+                second_item: item_option.1,
+            };
+            move_options.push(move_option);
+        }
+    }
+
+    move_options
 }
 
 fn setup_floors() -> Vec<Floor> {
